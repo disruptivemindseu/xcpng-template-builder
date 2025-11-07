@@ -40,7 +40,7 @@ The project includes two Debian 13 variants:
 ### Prerequisites
 
 1. **Packer**: Install HashiCorp Packer (version compatible with XenServer plugin)
-2. **XenServer Plugin**: The templates use the XenServer plugin v0.8.1+
+2. **XenServer Plugin**: The templates use the XenServer plugin v0.8.1+ ([GitHub repository](https://github.com/vatesfr/packer-plugin-xenserver/))
 3. **XCP-ng/Xenserver**: Access to an XCP-ng or Xenserver host
 4. **Network Access**: The build host must reach the XCP-ng host and download ISOs
 
