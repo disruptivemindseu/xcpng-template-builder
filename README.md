@@ -54,10 +54,33 @@ Create a variables file to customize your build. You can use environment variabl
 export PKR_VAR_remote_host="192.168.1.10"
 export PKR_VAR_remote_username="root"
 export PKR_VAR_remote_password="your-password"
-export PKR_VAR_sr_iso_name="Local storage"
+export PKR_VAR_sr_iso_name="ISOs"
 export PKR_VAR_sr_name="Local storage"
 export PKR_VAR_network_names='["Pool-wide network associated with eth0"]'
 ```
+
+#### Method 3: .env File
+
+You can also store your environment variables in a `.env` file for convenience. Example:
+
+```env
+PKR_VAR_remote_host="192.168.1.10"
+PKR_VAR_remote_username="root"
+PKR_VAR_remote_password="your-password"
+PKR_VAR_sr_iso_name="ISOs"
+PKR_VAR_sr_name="Local storage"
+PKR_VAR_network_names='["Pool-wide network associated with eth0"]'
+```
+
+Then load them in your shell before running Packer:
+
+```bash
+set -a
+source .env
+set +a
+```
+
+**Note:** For security, add `.env` to your `.gitignore` to avoid committing sensitive credentials.
 
 #### Method 2: Variables File
 
@@ -70,7 +93,7 @@ remote_username = "root"
 remote_password = "your-xenserver-password"
 
 # Storage Configuration
-sr_iso_name = "Local storage"  # Storage Repository for ISOs
+sr_iso_name = "ISOs"  # Storage Repository for ISOs
 sr_name     = "Local storage"  # Storage Repository for VM disks
 
 # Network Configuration
@@ -87,7 +110,7 @@ vm_tags        = ["production", "debian", "template"]
 
 | Variable | Required | Description | Default |
 |----------|----------|-------------|---------|
-| `remote_host` | Yes | XCP-ng/Xenserver host IP or FQDN | - |
+| `remote_host` | Yes | XCP-ng/Xenserver pool master IP or FQDN | - |
 | `remote_username` | Yes | Username for XCP-ng authentication | - |
 | `remote_password` | Yes | Password for XCP-ng authentication | - |
 | `sr_iso_name` | Yes | Storage Repository name for ISOs | - |

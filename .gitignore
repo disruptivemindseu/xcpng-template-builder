@@ -1,3 +1,4 @@
+.env
 # Ignore export folders
 **/export/
 
