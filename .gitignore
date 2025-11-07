@@ -1,0 +1,26 @@
+# Ignore export folders
+**/export/
+
+# Ignore common build artifacts
+*.box
+*.ova
+*.ovf
+*.vmdk
+*.iso
+
+# Ignore Packer cache
+packer_cache/
+.packer/
+
+# Ignore logs
+*.log
+packer-*.log
+
+# Ignore temporary files
+*.tmp
+*.temp
+*~
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
