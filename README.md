@@ -50,7 +50,6 @@ Create a variables file to customize your build. You can use environment variabl
 
 #### Method 1: Environment Variables
 
-
 You can set environment variables directly in your shell, or create a `.env` file with the following content:
 
 ```env
