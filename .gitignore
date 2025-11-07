@@ -7,6 +7,7 @@
 *.ovf
 *.vmdk
 *.iso
+*.xva
 
 # Ignore Packer cache
 packer_cache/
