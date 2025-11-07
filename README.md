@@ -50,18 +50,8 @@ Create a variables file to customize your build. You can use environment variabl
 
 #### Method 1: Environment Variables
 
-```bash
-export PKR_VAR_remote_host="192.168.1.10"
-export PKR_VAR_remote_username="root"
-export PKR_VAR_remote_password="your-password"
-export PKR_VAR_sr_iso_name="ISOs"
-export PKR_VAR_sr_name="Local storage"
-export PKR_VAR_network_names='["Pool-wide network associated with eth0"]'
-```
 
-#### Method 3: .env File
-
-You can also store your environment variables in a `.env` file for convenience. Example:
+You can set environment variables directly in your shell, or create a `.env` file with the following content:
 
 ```env
 PKR_VAR_remote_host="192.168.1.10"
@@ -80,7 +70,6 @@ source .env
 set +a
 ```
 
-**Note:** For security, add `.env` to your `.gitignore` to avoid committing sensitive credentials.
 
 #### Method 2: Variables File
 
