@@ -193,10 +193,40 @@ packer build -var-file="../../../../rhel10.pkrvars.hcl" rhel10-uefi-lvm.pkr.hcl
 
 ### Post-Build
 
-After successful build completion:
+After successful build completion, the behavior depends on the export configuration in the `.pkr.hcl` files:
 
+#### Default Behavior (Templates Stay on Build Host)
+
+By default, templates remain on the build host as templates with the following settings:
+
+```hcl
+output_directory     = "export"
+keep_vm              = "on_success"
+skip_set_template    = false
+format               = "none"
+export_network_names = ["Pool-wide network associated with eth0"]
+```
+
+In this mode:
+1. **VM Status**: The VM is kept on the XCP-ng host and converted to a template
+2. **Access**: Templates are available directly in XCP-ng/Xenserver for immediate use
+3. **No Download**: No files are downloaded to the local machine
+
+#### Download Mode (Export as XVA Files)
+
+If you want to download the templates as compressed XVA files, modify the export settings in the `.pkr.hcl` files:
+
+```hcl
+output_directory     = "export"
+keep_vm              = "never"
+skip_set_template    = true
+format               = "xva_compressed"
+export_network_names = ["Pool-wide network associated with eth0"]
+```
+
+In this mode:
 1. **Export Location**: Templates are exported to the `export/` directory as compressed XVA files
-2. **Import to XCP-ng**: Import the XVA file into your XCP-ng pool
+2. **Import to XCP-ng**: Import the XVA file into your XCP-ng pool when needed
 3. **Template Conversion**: Convert the imported VM to a template in XCP-ng Center or XOA
 
 ### Customization
