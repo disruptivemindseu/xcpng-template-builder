@@ -35,6 +35,34 @@ The project includes two Debian 13 variants:
 | **Default User** | template | template |
 | **Password** | debian13-uefi | debian13-uefi-lvm |
 
+### RHEL 10
+
+The project includes two RHEL 10 variants:
+- **UEFI**: Standard UEFI boot with regular partitioning
+- **UEFI/LVM**: UEFI boot with LVM-based storage for advanced disk management
+
+Note: These templates use the XCP Packer plugin (source "github.com/disruptivemindseu/xcp") and expect the RHEL 10 DVD ISO `rhel-10.0-x86_64-dvd.iso`.
+
+#### Features
+
+- **Automated Installation**: Fully automated installation using Kickstart (ks.cfg)
+- **UEFI Boot**: Modern UEFI firmware support
+- **SSH Access**: SSH server enabled by default
+- **Xen Guest Agent**: Installed and enabled for better XCP-ng integration
+- **Secure Defaults**: Root account locked; non-root user with sudo access
+
+#### Template Specifications
+
+| Component | UEFI | UEFI-LVM |
+|-----------|------|----------|
+| **Firmware** | UEFI | UEFI |
+| **vCPUs** | 2 | 2 |
+| **Memory** | 4GB | 4GB |
+| **Disk Size** | 32GB | 32GB |
+| **Partitioning** | Regular | LVM |
+| **Default User** | template | template |
+| **Password** | rhel10-uefi | rhel10-uefi-lvm |
+
 ## Usage
 
 ### Prerequisites
@@ -137,6 +165,32 @@ packer build debian13-uefi-lvm.pkr.hcl
 packer build -var-file="../../../../debian13.pkrvars.hcl" debian13-uefi-lvm.pkr.hcl
 ```
 
+#### RHEL 10 UEFI (Regular Partitioning)
+
+```bash
+# Navigate to the template directory
+cd packer/distros/rhel/10/uefi
+
+# Build with environment variables
+packer build rhel10-uefi.pkr.hcl
+
+# Build with variables file
+packer build -var-file="../../../../rhel10.pkrvars.hcl" rhel10-uefi.pkr.hcl
+```
+
+#### RHEL 10 UEFI-LVM
+
+```bash
+# Navigate to the template directory
+cd packer/distros/rhel/10/uefi-lvm
+
+# Build with environment variables
+packer build rhel10-uefi-lvm.pkr.hcl
+
+# Build with variables file
+packer build -var-file="../../../../rhel10.pkrvars.hcl" rhel10-uefi-lvm.pkr.hcl
+```
+
 ### Post-Build
 
 After successful build completion:
@@ -159,6 +213,18 @@ You can modify these files to:
 - Modify user accounts
 - Configure network settings
 
+#### Kickstart Configuration (RHEL 10)
+
+RHEL installations are automated using kickstart files located in the `http/` directories:
+- `packer/distros/rhel/10/uefi/http/ks.cfg` - UEFI variant
+- `packer/distros/rhel/10/uefi-lvm/http/ks.cfg` - UEFI-LVM variant
+
+You can modify these files to:
+- Switch between regular and LVM partitioning
+- Add packages (e.g., cloud-init)
+- Adjust user accounts and passwords
+- Configure network settings and hostname
+
 #### Template Configuration
 
 Modify the `.pkr.hcl` files to adjust:
@@ -166,6 +232,30 @@ Modify the `.pkr.hcl` files to adjust:
 - Boot commands
 - SSH credentials
 - Post-installation scripts
+
+### RHEL 10 Variables File Example
+
+Create a file named `rhel10.pkrvars.hcl`:
+
+```hcl
+# XCP-ng/Xenserver Connection
+remote_host     = "192.168.1.10"
+remote_username = "root"
+remote_password = "your-xenserver-password"
+
+# Storage Configuration
+sr_iso_name = "ISOs"          # Storage Repository for ISOs
+sr_name     = "Local storage" # Storage Repository for VM disks
+
+# Network Configuration
+network_names = ["Pool-wide network associated with eth0"]
+
+# VM Configuration (optional - will use defaults if not specified)
+vm_name        = "rhel10-template"
+vm_description = "Custom RHEL 10 Template"
+disk_name      = "rhel10-custom-disk"
+vm_tags        = ["production", "rhel", "template"]
+```
 
 ## Troubleshooting
 
