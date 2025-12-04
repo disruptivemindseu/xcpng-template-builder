@@ -61,7 +61,7 @@ variable "vm_description" {
 variable "disk_name" {
   type        = string
   description = "The name of the disk to create for the VM. This will be pulled from the env var 'PKR_VAR_disk_name'"
-  default     = "template-rhel10-uefi-lvm_disk1"
+  default     = "template-alma10-uefi_disk1"
 }
 
 variable "vm_tags" {
@@ -73,12 +73,12 @@ variable "vm_tags" {
 locals {
   timestamp      = regex_replace(timestamp(), "[- TZ:]", "")
   buildtime      = formatdate("YYYY.MM.DD", timestamp())
-  vm_name        = coalesce(var.vm_name, "template-rhel10-uefi-lvm_${local.timestamp}")
-  vm_description = coalesce(var.vm_description, "[Template] RHEL 10 UEFI LVM built on ${local.buildtime} by Packer")
+  vm_name        = coalesce(var.vm_name, "template-alma10-uefi_${local.timestamp}")
+  vm_description = coalesce(var.vm_description, "[Template] alma 10 UEFI built on ${local.buildtime} by Packer")
 }
 
 source "xcp-iso" "template" {
-  iso_name     = "rhel-10.1-x86_64-dvd.iso"
+  iso_name       = "AlmaLinux-10.1-x86_64-dvd.iso"
 
   sr_iso_name    = var.sr_iso_name
   sr_name        = var.sr_name
@@ -116,7 +116,7 @@ source "xcp-iso" "template" {
   firmware        = "uefi"
 
   ssh_username           = "template"
-  ssh_password           = "rhel10-uefi-lvm"
+  ssh_password           = "alma10-uefi"
   ssh_wait_timeout       = "60000s"
   ssh_handshake_attempts = 10000
 

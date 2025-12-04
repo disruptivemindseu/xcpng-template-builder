@@ -78,7 +78,7 @@ locals {
 }
 
 source "xcp-iso" "template" {
-  iso_name     = "rhel-10.0-x86_64-dvd.iso"
+  iso_name     = "rhel-10.1-x86_64-dvd.iso"
 
   sr_iso_name    = var.sr_iso_name
   sr_name        = var.sr_name
@@ -103,7 +103,7 @@ source "xcp-iso" "template" {
     "<enter>"
   ]
 
-  clone_template  = "Red Hat Enterprise Linux 9"
+  clone_template  = "Red Hat Enterprise Linux 10"
   vm_name         = local.vm_name
   vm_description  = local.vm_description
   vcpus_max       = 2
