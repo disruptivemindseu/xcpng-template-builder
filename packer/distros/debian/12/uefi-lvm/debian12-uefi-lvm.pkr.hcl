@@ -61,7 +61,7 @@ variable "vm_description" {
 variable "disk_name" {
   type        = string
   description = "The name of the disk to create for the VM. This will be pulled from the env var 'PKR_VAR_disk_name'"
-  default     = "template-debian13-uefi_disk1"
+  default     = "template-debian12-uefi-lvm_disk1"
 }
 
 variable "vm_tags" {
@@ -73,13 +73,13 @@ variable "vm_tags" {
 locals {
   timestamp      = regex_replace(timestamp(), "[- TZ:]", "")
   buildtime      = formatdate("YYYY.MM.DD", timestamp())
-  vm_name        = coalesce(var.vm_name, "template-debian13-uefi_${local.timestamp}")
-  vm_description = coalesce(var.vm_description, "[Template] Debian 13 UEFI built on ${local.buildtime} by Packer")
+  vm_name        = coalesce(var.vm_name, "template-debian12-uefi-lvm_${local.timestamp}")
+  vm_description = coalesce(var.vm_description, "[Template] Debian 12 UEFI LVM built on ${local.buildtime} by Packer")
 }
 
 source "xenserver-iso" "template" {
-  iso_checksum = "1ada40e4c938528dd8e6b9c88c19b978a0f8e2a6757b9cf634987012d37ec98503ebf3e05acbae9be4c0ec00b52e8852106de1bda93a2399d125facea45400f8"
-  iso_url      = "https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-13.3.0-amd64-netinst.iso"
+  iso_checksum = "418540edffccff0254dc6c517ce45d1a9b5913107253cea39d6cdec0ff9c7ae47dcba985437991535b476523b12030aba0cc9c21db9e23b1cf2c998aaeea60e5"
+  iso_url      = "https://cdimage.debian.org/cdimage/archive/12.13.0/amd64/iso-cd/debian-12.13.0-amd64-netinst.iso"
 
   sr_iso_name    = var.sr_iso_name
   sr_name        = var.sr_name
@@ -102,7 +102,7 @@ source "xenserver-iso" "template" {
     "auto=true ",
     "priority=critical ",
     "url=http://{{.HTTPIP}}:{{.HTTPPort}}/preseed.cfg ",
-    "hostname=template-debian13-uefi ",
+    "hostname=template-debian12-uefi-lvm ",
     "--- ",
     "quiet ",
     "<enter>",
@@ -124,7 +124,7 @@ source "xenserver-iso" "template" {
   firmware        = "uefi"
 
   ssh_username           = "template"
-  ssh_password           = "debian13-uefi"
+  ssh_password           = "debian12-uefi-lvm"
   ssh_wait_timeout       = "60000s"
   ssh_handshake_attempts = 10000
 

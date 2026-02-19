@@ -78,8 +78,8 @@ locals {
 }
 
 source "xenserver-iso" "template" {
-  iso_checksum = "891d7936a2e21df1d752e5d4c877bb7ca2759c902b0bfbf5527098464623bedaa17260e8bd4acf1331580ae56a6a87a08cc2f497102daa991d5e4e4018fee82b"
-  iso_url      = "https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-13.2.0-amd64-netinst.iso"
+  iso_checksum = "1ada40e4c938528dd8e6b9c88c19b978a0f8e2a6757b9cf634987012d37ec98503ebf3e05acbae9be4c0ec00b52e8852106de1bda93a2399d125facea45400f8"
+  iso_url      = "https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-13.3.0-amd64-netinst.iso"
 
   sr_iso_name    = var.sr_iso_name
   sr_name        = var.sr_name
