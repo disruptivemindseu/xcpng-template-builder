@@ -30,11 +30,7 @@ update-xenserver-version:
 		echo "✗ VERSION not set. Usage: make update-xenserver-version VERSION=0.12"; exit 1; \
 	fi
 	@echo "Updating Xenserver plugin version to $(XENSERVER_VERSION) in all pkr.hcl files..."
-	@find packer/distros -name "*.pkr.hcl" -exec sed -i 's/\s*xcp = {/    xenserver = {/' {} \;
-	@find packer/distros -name "*.pkr.hcl" -exec sed -i 's/version = ">= >*[0-9.]*"/version = ">= $(XENSERVER_VERSION)"/' {} \;
-	@find packer/distros -name "*.pkr.hcl" -exec sed -i 's|source  = "github.com/disruptivemindseu/xcp"|source  = "github.com/vatesfr/xenserver"|g' {} \;
-	@find packer/distros -name "*.pkr.hcl" -exec sed -i 's/source "xcp-iso"/source "xenserver-iso"/' {} \;
-	@find packer/distros -name "*.pkr.hcl" -exec sed -i 's/xcp-iso\.template/xenserver-iso.template/' {} \;
+	@find packer/distros -name "*.pkr.hcl" -exec sed -i 's/version = ">= [0-9.]*"/version = ">= $(XENSERVER_VERSION)"/' {} \;
 	@echo "✓ pkr files updated with version $(XENSERVER_VERSION)"
 
 sync-xenserver-plugin: download-xenserver-plugin
