@@ -39,7 +39,7 @@ update-xenserver-version:
 
 sync-xenserver-plugin: download-xenserver-plugin
 	@echo "Detecting installed version..."
-	@INSTALLED_VERSION=$$(ls -1 ~/.config/packer/plugins/$(XENSERVER_PLUGIN_SOURCE)/ 2>/dev/null | grep -oP 'packer-plugin-xenserver_v\K[^_]*' | head -1); \
+	@INSTALLED_VERSION=$$(packer plugins installed | grep $(XENSERVER_PLUGIN_SOURCE) | grep -oP 'packer-plugin-xenserver_v\K[^_]*' || echo ""); \
 	if [ -z "$$INSTALLED_VERSION" ]; then \
 		echo "✗ Failed to detect installed version"; exit 1; \
 	fi; \
