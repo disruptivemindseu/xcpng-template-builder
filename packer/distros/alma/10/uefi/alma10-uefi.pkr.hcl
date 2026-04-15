@@ -1,8 +1,8 @@
 packer {
   required_plugins {
-    xcp = {
-      version = ">= 0.10.0"
-      source  = "github.com/disruptivemindseu/xcp"
+    xenserver = {
+      version = ">= 0.11.4"
+      source  = "github.com/vatesfr/xenserver"
     }
   }
 }
@@ -77,7 +77,7 @@ locals {
   vm_description = coalesce(var.vm_description, "[Template] alma 10 UEFI built on ${local.buildtime} by Packer")
 }
 
-source "xcp-iso" "template" {
+source "xenserver-iso" "template" {
   iso_name       = "AlmaLinux-10.1-x86_64-dvd.iso"
 
   sr_iso_name    = var.sr_iso_name
@@ -128,5 +128,5 @@ source "xcp-iso" "template" {
 }
 
 build {
-  sources = ["xcp-iso.template"]
+  sources = ["xenserver-iso.template"]
 }
