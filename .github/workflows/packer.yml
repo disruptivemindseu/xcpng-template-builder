@@ -4,6 +4,15 @@ on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
+    inputs:
+      build_all:
+        description: 'Build all templates (ignores changes)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
 
 jobs:
   list-templates:
@@ -12,10 +21,24 @@ jobs:
       matrix: ${{ steps.get_dirs.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Get packer directories
         id: get_dirs
         run: |
-          DIRS=$(find packer/distros -name "*.pkr.hcl" -exec dirname {} \; | sort | uniq | jq -R -s -c 'split("\n")[:-1]')
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.build_all }}" = "true" ]; then
+            echo "Building all templates"
+            DIRS=$(find packer/distros -name "*.pkr.hcl" -exec dirname {} \; | sort | uniq | jq -R -s -c 'split("\n")[:-1]')
+          else
+            echo "Building only changed templates"
+            CHANGED=$(git diff --name-only HEAD~1 | grep -E "^packer/distros" || true)
+            if [ -z "$CHANGED" ]; then
+              echo "No changes detected in packer/distros"
+              DIRS="[]"
+            else
+              DIRS=$(echo "$CHANGED" | xargs -I {} dirname {} | sort | uniq | jq -R -s -c 'split("\n")[:-1]')
+            fi
+          fi
           echo "matrix=$DIRS" >> $GITHUB_OUTPUT
   packer:
     needs: list-templates
