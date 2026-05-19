@@ -53,6 +53,7 @@ jobs:
           echo "matrix=$DIRS" >> $GITHUB_OUTPUT
   packer:
     needs: list-templates
+    if: needs.list-templates.outputs.matrix != '[]'
     runs-on: [ self-hosted, Linux, X64, packer ]
     strategy:
       matrix:
