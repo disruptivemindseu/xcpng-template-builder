@@ -1,0 +1,50 @@
+# Minimal Alpine autoinstall answer file
+# Generated/adapted from setup-alpine -c and wiki examples
+# https://wiki.alpinelinux.org/wiki/Using_an_answerfile_with_setup-alpine
+
+# Keyboard (none = skip or use default)
+KEYMAPOPTS="us us"
+# Hostname
+HOSTNAMEOPTS="alpine"
+# Device manager (mdev is lightweight/default for minimal)
+DEVDOPTS="mdev"
+# Network interfaces (simple DHCP on eth0)
+INTERFACESOPTS="auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+	hostname alpine"
+
+# DNS (optional - can be left empty)
+DNSOPTS="-n 1.1.1.1"
+
+# Timezone (UTC for minimal)
+TIMEZONEOPTS="-z UTC"
+
+# Proxy (none for direct internet)
+PROXYOPTS="none"
+
+# APK repositories (edge or specific version; -1 = latest)
+APKREPOSOPTS="-1 -c"
+
+# SSH daemon (openssh for remote access)
+SSHDOPTS="openssh"
+
+# NTP (openntpd is lightweight)
+NTPOPTS="openntpd"
+
+# Disk setup - use environment variable from your script (ERASE_DISKS)
+# If not set via env, you can hardcode here, e.g.:
+DISKOPTS="-m sys /dev/xvda"
+# For fully automated wipe+install, rely on your export ERASE_DISKS=/dev/xvda
+
+# User creation (this is the "user template" part)
+# -a = admin (adds to wheel + doas)
+# -u = create user
+# -g = additional groups
+USEROPTS="-a alpine"
+
+# LBU / apk cache / diskless options - disabled for normal disk install
+LBUOPTS="none"
+APKCACHEOPTS="none"
