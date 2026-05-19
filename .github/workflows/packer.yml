@@ -36,7 +36,18 @@ jobs:
               echo "No changes detected in packer/distros"
               DIRS="[]"
             else
-              DIRS=$(echo "$CHANGED" | xargs -I {} dirname {} | sort | uniq | jq -R -s -c 'split("\n")[:-1]')
+              # Find all template directories (containing .pkr.hcl)
+              TEMPLATES=$(find packer/distros -name "*.pkr.hcl" -exec dirname {} \; | sort)
+              # For each changed file, find which template directory it belongs to
+              MATCHED_DIRS=$(echo "$CHANGED" | while read file; do
+                for tmpl in $TEMPLATES; do
+                  if [[ "$file" == "$tmpl"* ]]; then
+                    echo "$tmpl"
+                    break
+                  fi
+                done
+              done | sort | uniq)
+              DIRS=$(echo "$MATCHED_DIRS" | jq -R -s -c 'split("\n")[:-1]')
             fi
           fi
           echo "matrix=$DIRS" >> $GITHUB_OUTPUT
