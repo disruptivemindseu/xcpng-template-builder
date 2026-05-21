@@ -83,11 +83,17 @@ jobs:
           packer init .
           packer validate .
           packer build .
+      - name: Set artifact name
+        id: artifact
+        run: |
+          ARTIFACT_NAME="${{ matrix.dir }}"
+          ARTIFACT_NAME="${ARTIFACT_NAME//\//_}"
+          echo "name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
       - name: Upload artifact
         if: needs.list-templates.outputs.is_release == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.dir | replace('/', '_') }}
+          name: ${{ steps.artifact.outputs.name }}
           path: ${{ matrix.dir }}/export/
           retention-days: 7
 
