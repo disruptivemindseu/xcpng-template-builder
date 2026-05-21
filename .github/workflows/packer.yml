@@ -13,12 +13,21 @@ on:
         options:
           - 'false'
           - 'true'
+      template_path:
+        description: 'Build and release specific template (e.g., packer/distros/debian/13/uefi)'
+        required: false
+        type: string
+      release_tag:
+        description: 'Release tag for GitHub release (optional, required if template_path is set)'
+        required: false
+        type: string
 
 jobs:
   list-templates:
     runs-on: [ self-hosted, Linux, X64, packer ]
     outputs:
       matrix: ${{ steps.get_dirs.outputs.matrix }}
+      is_release: ${{ steps.get_dirs.outputs.is_release }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,9 +35,14 @@ jobs:
       - name: Get packer directories
         id: get_dirs
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.build_all }}" = "true" ]; then
+          if [ -n "${{ inputs.template_path }}" ]; then
+            echo "Building specific template: ${{ inputs.template_path }}"
+            DIRS=$(echo '${{ inputs.template_path }}' | jq -R -s -c '[.[:-1]]')
+            echo "is_release=true" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.build_all }}" = "true" ]; then
             echo "Building all templates"
             DIRS=$(find packer/distros -name "*.pkr.hcl" -exec dirname {} \; | sort | uniq | jq -R -s -c 'split("\n")[:-1]')
+            echo "is_release=false" >> $GITHUB_OUTPUT
           else
             echo "Building only changed templates"
             CHANGED=$(git diff --name-only HEAD~1 | grep -E "^packer/distros" || true)
@@ -49,6 +63,7 @@ jobs:
               done | sort | uniq)
               DIRS=$(echo "$MATCHED_DIRS" | jq -R -s -c 'split("\n")[:-1]')
             fi
+            echo "is_release=false" >> $GITHUB_OUTPUT
           fi
           echo "matrix=$DIRS" >> $GITHUB_OUTPUT
   packer:
@@ -68,3 +83,29 @@ jobs:
           packer init .
           packer validate .
           packer build .
+      - name: Upload artifact
+        if: needs.list-templates.outputs.is_release == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.dir }}
+          path: ${{ matrix.dir }}/export/
+          retention-days: 7
+
+  release:
+    needs: [list-templates, packer]
+    if: needs.list-templates.outputs.is_release == 'true' && success()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          name: Release ${{ inputs.release_tag }}
+          files: artifacts/**/*.xva
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

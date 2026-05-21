@@ -131,7 +131,7 @@ source "xenserver-iso" "template" {
   output_directory     = "export"
   keep_vm              = "on_success"
   skip_set_template    = false
-  format               = "none"
+  format               = "xva_compressed"
   export_network_names = ["Pool-wide network associated with eth0"]
 }
 
