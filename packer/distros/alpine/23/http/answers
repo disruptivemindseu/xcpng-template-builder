@@ -39,11 +39,7 @@ NTPOPTS="openntpd"
 DISKOPTS="-m sys /dev/xvda"
 # For fully automated wipe+install, rely on your export ERASE_DISKS=/dev/xvda
 
-# User creation (this is the "user template" part)
-# -a = admin (adds to wheel + doas)
-# -u = create user
-# -g = additional groups
-USEROPTS="-a alpine"
+USEROPTS="none"
 
 # LBU / apk cache / diskless options - disabled for normal disk install
 LBUOPTS="none"

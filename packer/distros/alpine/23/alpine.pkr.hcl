@@ -95,33 +95,33 @@ source "xenserver-iso" "template" {
   boot_wait = "15s"
 
   boot_command = [
-  "<wait10>",
-  "root<enter>",
-  "<wait>",
-  "ifconfig eth0 up && udhcpc -i eth0<enter>",
-  "<wait5>",
-  "wget http://{{ .HTTPIP }}:{{ .HTTPPort }}/answers -O answers<enter>",
-  "<wait5>",
-  "export ERASE_DISKS=/dev/xvda<enter>",
-  "<wait5>",
-  "setup-alpine -f $PWD/answers<enter>",
-  "<wait5>",
-  "template<enter>",
-  "<wait5>",
-  "template<enter>",
-  "<wait100>",
-  "mount /dev/xvda3 /mnt<enter><wait>",
-  "chroot /mnt<enter><wait>",
-  "echo 'alpine:sardine123!' | chpasswd<enter>",
-  "apk add --no-cache cloud-init xe-guest-utilities openssh openssh-server-pam cloud-utils-growpart e2fsprogs e2fsprogs-extra <enter><wait10>",
-  "rc-update add xe-guest-utilities boot<enter>",
-  "setup-cloud-init<enter><wait10>",
-  "echo 'datasource_list: [NoCloud, ConfigDrive]'> /etc/cloud/cloud.cfg.d/02-datasource.cfg<enter>",
-  "mkdir -p /usr/lib/cloud-init<enter>",
-  "ln -s /usr/libexec/cloud-init/write-ssh-key-fingerprints /usr/lib/cloud-init/write-ssh-key-fingerprints<enter>", 
-  "sed -i 's/#UsePAM no/UsePAM yes/' /etc/ssh/sshd_config<enter>", # https://git.alpinelinux.org/aports/tree/community/cloud-init/README.Alpine#n380
-  "exit<enter>",
-  "reboot<enter>"
+    "<wait10>",
+    "root<enter>",
+    "<wait>",
+    "ifconfig eth0 up && udhcpc -i eth0<enter>",
+    "<wait5>",
+    "wget http://{{ .HTTPIP }}:{{ .HTTPPort }}/answers -O answers<enter>",
+    "<wait5>",
+    "export ERASE_DISKS=/dev/xvda<enter>",
+    "<wait5>",
+    "setup-alpine -f $PWD/answers<enter>",
+    "<wait5>",
+    "template<enter>",
+    "<wait5>",
+    "template<enter>",
+    "<wait60>",
+    "mount /dev/xvda3 /mnt<enter><wait>",
+    "chroot /mnt<enter><wait>",
+    "apk add --no-cache cloud-init xe-guest-utilities openssh openssh-server-pam cloud-utils-growpart e2fsprogs e2fsprogs-extra doas<enter><wait10>",
+    "rc-update add xe-guest-utilities boot<enter>",
+    "setup-cloud-init<enter><wait10>",
+    "echo 'datasource_list: [NoCloud, ConfigDrive]'> /etc/cloud/cloud.cfg.d/02-datasource.cfg<enter>",
+    "mkdir -p /usr/lib/cloud-init<enter>",
+    "ln -s /usr/libexec/cloud-init/write-ssh-key-fingerprints /usr/lib/cloud-init/write-ssh-key-fingerprints<enter>",
+    "sed -i 's/^#PermitRootLogin prohibit-password$/PermitRootLogin yes/' /etc/ssh/sshd_config<enter>",
+    "sed -i 's/#UsePAM no/UsePAM yes/' /etc/ssh/sshd_config<enter>", # https://git.alpinelinux.org/aports/tree/community/cloud-init/README.Alpine#n380
+    "exit<enter>",
+    "reboot<enter>"
   ]
 
   clone_template  = "Generic Linux BIOS"
@@ -136,8 +136,8 @@ source "xenserver-iso" "template" {
   vm_tags         = var.vm_tags
   firmware        = "uefi"
 
-  ssh_username           = "alpine"
-  ssh_password           = "sardine123!"
+  ssh_username           = "root"
+  ssh_password           = "template"
   ssh_wait_timeout       = "60000s"
   ssh_handshake_attempts = 10000
 
