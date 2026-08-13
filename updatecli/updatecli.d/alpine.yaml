@@ -55,25 +55,28 @@ sources:
   alpineChecksum:
     name: "SHA256 of that alpine-virt ISO"
     kind: shell
-    # Both sources select the same `flavor: alpine-virt` entry, so within one read of
-    # latest-releases.yaml the version and the checksum always describe the same image. They are
-    # still two separate fetches, and dependson orders them without sharing a value, so a release
-    # published between the two would split the pair. Same reasoning as debian13.yaml: the mismatch
-    # fails the build rather than passing an unverified image through.
-    dependson:
-      - alpineVersion
     spec:
+      # Matches on version as well as flavor. Selecting on `flavor: alpine-virt` alone would take
+      # whatever sha256 the file happens to list, which is only the right hash as long as this fetch
+      # and alpineVersion's fetch saw the same file — a release published between the two would
+      # silently pair a new checksum with the old URL. Binding the version in means a mismatch
+      # cannot be expressed: either the entry is there, or this exits non-zero.
+      #
+      # See debian13.yaml for why the `source` template reference is what orders these rather than
+      # `dependson`, and for what a failed parent does.
       command: |
         set -eu
+        want='{{ source "alpineVersion" }}'
         releases=$(curl -sfL --retry 5 --retry-delay 5 --retry-all-errors --max-time 60 \
           https://dl-cdn.alpinelinux.org/alpine/v3.23/releases/x86_64/latest-releases.yaml)
-        sum=$(printf '%s\n' "$releases" | awk '
-          /^-/ { fl=""; sum="" }
-          /^[[:space:]]+flavor:/ { fl=$2 }
-          /^[[:space:]]+sha256:/ { if (fl=="alpine-virt") { print $2; exit } }
+        sum=$(printf '%s\n' "$releases" | awk -v want="$want" '
+          /^-/ { ver=""; fl="" }
+          /^[[:space:]]+version:/ { ver=$2 }
+          /^[[:space:]]+flavor:/  { fl=$2 }
+          /^[[:space:]]+sha256:/  { if (fl=="alpine-virt" && ver==want) { print $2; exit } }
         ')
         if [ -z "$sum" ]; then
-          echo "no alpine-virt sha256 in the v3.23 latest-releases.yaml" >&2
+          echo "no alpine-virt sha256 for version ${want} in the v3.23 latest-releases.yaml" >&2
           exit 1
         fi
         printf '%s' "$sum"

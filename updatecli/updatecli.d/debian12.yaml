@@ -46,23 +46,16 @@ sources:
   debian12Checksum:
     name: "SHA512 of that release's netinst ISO"
     kind: shell
-    # dependson orders execution only; it does not pass the resolved version to this source. See
-    # the long note in debian13.yaml for why the two independent fetches are left that way and what
-    # the `file:` alternative would cost.
-    dependson:
-      - debian12Version
+    # Takes the version from debian12Version rather than re-deriving it, so the hash and the URL
+    # cannot describe different images. See debian13.yaml for why the `source` template reference is
+    # what orders these (not `dependson`), how a failed parent behaves, and why the `file:`
+    # alternative is not used.
     spec:
       # The `debian-edu-` and `debian-mac-` netinst images share this file; anchor on the exact
       # filename or you pin a checksum for an image nobody downloads.
       command: |
         set -eu
-        version=$(curl -sfL --retry 5 --retry-delay 5 --retry-all-errors --max-time 60 \
-          https://cdimage.debian.org/cdimage/archive/ |
-          grep -oE '12\.[0-9]+\.[0-9]+/' |
-          sort -t. -k1,1n -k2,2n -k3,3n -u |
-          tail -1 |
-          tr -d '/')
-        [ -n "$version" ] || { echo "no Debian 12 point release found" >&2; exit 1; }
+        version='{{ source "debian12Version" }}'
         sums=$(curl -sfL --retry 5 --retry-delay 5 --retry-all-errors --max-time 60 \
           "https://cdimage.debian.org/cdimage/archive/${version}/amd64/iso-cd/SHA512SUMS")
         sum=$(printf '%s\n' "$sums" |
