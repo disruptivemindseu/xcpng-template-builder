@@ -52,8 +52,19 @@ sources:
   debian13Checksum:
     name: "SHA512 of that release's netinst ISO"
     kind: shell
-    # dependson forces this to resolve after the version source, so both read a consistent view
-    # even if a point release lands between the two fetches.
+    # dependson orders execution and nothing more: it does not hand this source the value the
+    # version source resolved, so the two fetches are independent and can in principle disagree.
+    # If Debian archives a point release in the seconds between them, this manifest writes an
+    # iso_url for one version and an iso_checksum for another.
+    #
+    # Left as is, deliberately. The pair is checked before anything is built — Packer verifies the
+    # checksum after downloading and aborts — so the visible outcome is a failed build on an
+    # updatecli pull request that a human is already reading, not a template built from an
+    # unverified image. The alternative is `iso_checksum = "file:<SHA512SUMS URL>"`, which cannot
+    # disagree because Packer resolves both from the same directory at build time, but it drops the
+    # hash from the repository. Keeping it here means a mirror that ever serves different bytes for
+    # this filename fails the build, and that tripwire is worth more than closing a window that is
+    # seconds wide a few times a year.
     dependson:
       - debian13Version
     spec:

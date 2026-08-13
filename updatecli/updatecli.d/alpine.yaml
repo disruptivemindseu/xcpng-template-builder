@@ -55,6 +55,11 @@ sources:
   alpineChecksum:
     name: "SHA256 of that alpine-virt ISO"
     kind: shell
+    # Both sources select the same `flavor: alpine-virt` entry, so within one read of
+    # latest-releases.yaml the version and the checksum always describe the same image. They are
+    # still two separate fetches, and dependson orders them without sharing a value, so a release
+    # published between the two would split the pair. Same reasoning as debian13.yaml: the mismatch
+    # fails the build rather than passing an unverified image through.
     dependson:
       - alpineVersion
     spec:

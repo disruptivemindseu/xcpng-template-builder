@@ -46,6 +46,9 @@ sources:
   debian12Checksum:
     name: "SHA512 of that release's netinst ISO"
     kind: shell
+    # dependson orders execution only; it does not pass the resolved version to this source. See
+    # the long note in debian13.yaml for why the two independent fetches are left that way and what
+    # the `file:` alternative would cost.
     dependson:
       - debian12Version
     spec:
