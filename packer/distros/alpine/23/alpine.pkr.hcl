@@ -90,7 +90,11 @@ source "xenserver-iso" "template" {
   remote_username = var.remote_username
 
   http_directory = "http"
-  ip_getter      = "tools"
+  # "http" rather than "tools": packer takes the address from the source of the guest's request
+  # to its own HTTP server, so it needs no guest agent to find the VM. With "tools" it reads
+  # xenstore, which only an agent populates, and this template installs its agent from the
+  # provisioner, which cannot run before packer has an address to SSH to.
+  ip_getter = "http"
 
   boot_wait = "15s"
 
@@ -112,13 +116,7 @@ source "xenserver-iso" "template" {
     "<wait60>",
     "mount /dev/xvda3 /mnt<enter><wait>",
     "chroot /mnt<enter><wait>",
-    # xe-guest-utilities is installed here and removed again by the provisioner. It cannot simply
-    # be dropped: ip_getter = "tools" means packer learns this VM's address from xenstore, which
-    # only a guest agent populates. With no agent at first boot there is no IP, so no SSH, so the
-    # provisioner that installs xen-guest-agent never runs. It has to bootstrap the connection
-    # and then be replaced.
-    "apk add --no-cache cloud-init xe-guest-utilities openssh openssh-server-pam cloud-utils-growpart e2fsprogs e2fsprogs-extra doas<enter><wait10>",
-    "rc-update add xe-guest-utilities boot<enter>",
+    "apk add --no-cache cloud-init openssh openssh-server-pam cloud-utils-growpart e2fsprogs e2fsprogs-extra doas<enter><wait10>",
     "setup-cloud-init<enter><wait10>",
     "echo 'datasource_list: [NoCloud, ConfigDrive]'> /etc/cloud/cloud.cfg.d/02-datasource.cfg<enter>",
     "mkdir -p /usr/lib/cloud-init<enter>",
@@ -194,13 +192,6 @@ build {
       "install -Dm755 target/release/xen-guest-agent /usr/sbin/xen-guest-agent",
       "install -Dm755 /tmp/xen-guest-agent.initd /etc/init.d/xen-guest-agent",
       "rc-update add xen-guest-agent boot",
-      # Only now is it safe to drop the Go tools. Both agents write the same xenstore keys, so the
-      # template must ship exactly one of them, and this is the one that reports a real version
-      # rather than @PRODUCT_MAJOR_VERSION@. Removing the package also removes its init script, so
-      # nothing is left enabled at boot.
-      "rc-service xe-guest-utilities stop || true",
-      "rc-update del xe-guest-utilities boot || true",
-      "apk del xe-guest-utilities",
       # Start it here rather than leaving it to first boot. It costs nothing and it means a
       # template can never be sealed around an agent that does not run: if the binary is
       # missing a library or the init script is wrong, the build fails here instead of
