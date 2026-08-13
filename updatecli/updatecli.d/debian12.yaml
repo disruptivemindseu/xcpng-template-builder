@@ -1,0 +1,122 @@
+---
+# Debian 12 netinst ISO.
+#
+# Same shape as debian13.yaml, and separate from it on purpose: updatecli opens one pull request per
+# manifest file, and a bookworm bump and a trixie bump have nothing to say to each other. Reviewing
+# them together means holding one back because the other needs a rebuild.
+#
+# Debian 12 is oldstable, so every one of its point releases already sits under `archive/` and the
+# URL the templates carry is the durable one. This manifest only moves the version.
+
+name: 'deps(debian12): bump the Debian 12 netinst ISO'
+
+scms:
+  default:
+    kind: github
+    spec:
+      user: "{{ .github.user }}"
+      email: "{{ .github.email }}"
+      owner: "{{ .github.owner }}"
+      repository: "{{ .github.repository }}"
+      token: "{{ requiredEnv .github.token }}"
+      username: "{{ .github.username }}"
+      branch: "{{ .github.branch }}"
+
+sources:
+  debian12Version:
+    name: "Newest archived Debian 12 point release"
+    kind: shell
+    spec:
+      # See debian13.yaml for why the fetch is not piped directly into grep.
+      command: |
+        set -eu
+        index=$(curl -sfL --retry 5 --retry-delay 5 --retry-all-errors --max-time 60 \
+          https://cdimage.debian.org/cdimage/archive/)
+        version=$(printf '%s\n' "$index" |
+          grep -oE '12\.[0-9]+\.[0-9]+/' |
+          sort -t. -k1,1n -k2,2n -k3,3n -u |
+          tail -1 |
+          tr -d '/')
+        if [ -z "$version" ]; then
+          echo "no Debian 12 point release found in the archive index" >&2
+          exit 1
+        fi
+        printf '%s' "$version"
+
+  debian12Checksum:
+    name: "SHA512 of that release's netinst ISO"
+    kind: shell
+    dependson:
+      - debian12Version
+    spec:
+      # The `debian-edu-` and `debian-mac-` netinst images share this file; anchor on the exact
+      # filename or you pin a checksum for an image nobody downloads.
+      command: |
+        set -eu
+        version=$(curl -sfL --retry 5 --retry-delay 5 --retry-all-errors --max-time 60 \
+          https://cdimage.debian.org/cdimage/archive/ |
+          grep -oE '12\.[0-9]+\.[0-9]+/' |
+          sort -t. -k1,1n -k2,2n -k3,3n -u |
+          tail -1 |
+          tr -d '/')
+        [ -n "$version" ] || { echo "no Debian 12 point release found" >&2; exit 1; }
+        sums=$(curl -sfL --retry 5 --retry-delay 5 --retry-all-errors --max-time 60 \
+          "https://cdimage.debian.org/cdimage/archive/${version}/amd64/iso-cd/SHA512SUMS")
+        sum=$(printf '%s\n' "$sums" |
+          grep -E "  debian-${version}-amd64-netinst\.iso\$" |
+          cut -d' ' -f1)
+        if [ -z "$sum" ]; then
+          echo "no netinst checksum for Debian ${version}" >&2
+          exit 1
+        fi
+        printf '%s' "$sum"
+
+targets:
+  uefiIsoUrl:
+    name: "iso_url, debian12-uefi"
+    kind: file
+    scmid: default
+    sourceid: debian12Version
+    spec:
+      file: "packer/distros/debian/12/uefi/debian12-uefi.pkr.hcl"
+      matchpattern: 'iso_url      = ".*debian-12\.[0-9]+\.[0-9]+-amd64-netinst\.iso"'
+      replacepattern: 'iso_url      = "https://cdimage.debian.org/cdimage/archive/{{ source "debian12Version" }}/amd64/iso-cd/debian-{{ source "debian12Version" }}-amd64-netinst.iso"'
+
+  uefiIsoChecksum:
+    name: "iso_checksum, debian12-uefi"
+    kind: file
+    scmid: default
+    sourceid: debian12Checksum
+    spec:
+      file: "packer/distros/debian/12/uefi/debian12-uefi.pkr.hcl"
+      matchpattern: 'iso_checksum = ".*"'
+      replacepattern: 'iso_checksum = "{{ source "debian12Checksum" }}"'
+
+  uefiLvmIsoUrl:
+    name: "iso_url, debian12-uefi-lvm"
+    kind: file
+    scmid: default
+    sourceid: debian12Version
+    spec:
+      file: "packer/distros/debian/12/uefi-lvm/debian12-uefi-lvm.pkr.hcl"
+      matchpattern: 'iso_url      = ".*debian-12\.[0-9]+\.[0-9]+-amd64-netinst\.iso"'
+      replacepattern: 'iso_url      = "https://cdimage.debian.org/cdimage/archive/{{ source "debian12Version" }}/amd64/iso-cd/debian-{{ source "debian12Version" }}-amd64-netinst.iso"'
+
+  uefiLvmIsoChecksum:
+    name: "iso_checksum, debian12-uefi-lvm"
+    kind: file
+    scmid: default
+    sourceid: debian12Checksum
+    spec:
+      file: "packer/distros/debian/12/uefi-lvm/debian12-uefi-lvm.pkr.hcl"
+      matchpattern: 'iso_checksum = ".*"'
+      replacepattern: 'iso_checksum = "{{ source "debian12Checksum" }}"'
+
+actions:
+  default:
+    kind: github/pullrequest
+    scmid: default
+    title: 'deps(debian12): bump the netinst ISO to {{ source "debian12Version" }}'
+    spec:
+      labels:
+        - dependencies

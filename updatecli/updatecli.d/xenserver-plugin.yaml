@@ -1,0 +1,88 @@
+---
+# packer-plugin-xenserver, in the templates and in the Makefile.
+#
+# Two spellings of the same plugin, and only one of them is a GitHub repository. The templates and
+# the Makefile both say `github.com/vatesfr/xenserver`, which is correct as a *Packer plugin source
+# address* — Packer strips the `packer-plugin-` prefix when resolving one. It is not a repository:
+# `GET /repos/vatesfr/xenserver` returns 404. The releases live at `vatesfr/packer-plugin-xenserver`,
+# which is what the source below queries and what the Makefile's XENSERVER_GITHUB_REPO should say
+# if anything ever calls the API with it.
+#
+# `make sync-xenserver-plugin` already rewrites the version across the .pkr.hcl files, but only from
+# whatever happens to be installed on the machine that runs it, and only when someone runs it. Both
+# targets are listed here so the two cannot drift — which they currently have: twelve templates say
+# 0.11.4, the Alpine one says 0.8.1, and the Makefile default says 0.8.1.
+
+name: 'deps(packer): bump the vatesfr/xenserver plugin'
+
+scms:
+  default:
+    kind: github
+    spec:
+      user: "{{ .github.user }}"
+      email: "{{ .github.email }}"
+      owner: "{{ .github.owner }}"
+      repository: "{{ .github.repository }}"
+      token: "{{ requiredEnv .github.token }}"
+      username: "{{ .github.username }}"
+      branch: "{{ .github.branch }}"
+
+sources:
+  xenserverPluginVersion:
+    name: "Latest vatesfr/packer-plugin-xenserver release"
+    kind: githubrelease
+    spec:
+      owner: "vatesfr"
+      repository: "packer-plugin-xenserver"
+      token: "{{ requiredEnv .github.token }}"
+      username: "{{ .github.username }}"
+      # versionfilter, not versioning. The older spelling is accepted and then silently ignored,
+      # which shows up as updatecli cheerfully pinning a pre-release.
+      versionfilter:
+        kind: semver
+    transformers:
+      - trimprefix: "v"
+
+targets:
+  templates:
+    name: "required_plugins version across every template"
+    kind: file
+    scmid: default
+    sourceid: xenserverPluginVersion
+    spec:
+      # Same pattern the Makefile's sed uses, so the two stay interchangeable.
+      matchpattern: 'version = ">= [0-9.]*"'
+      replacepattern: 'version = ">= {{ source "xenserverPluginVersion" }}"'
+      files:
+        - "packer/distros/alma/10/uefi/alma10-uefi.pkr.hcl"
+        - "packer/distros/alma/10/uefi-lvm/alma10-uefi-lvm.pkr.hcl"
+        - "packer/distros/alpine/23/alpine.pkr.hcl"
+        - "packer/distros/centos/10/uefi/centos10-uefi.pkr.hcl"
+        - "packer/distros/centos/10/uefi-lvm/centos10-uefi-lvm.pkr.hcl"
+        - "packer/distros/debian/12/uefi/debian12-uefi.pkr.hcl"
+        - "packer/distros/debian/12/uefi-lvm/debian12-uefi-lvm.pkr.hcl"
+        - "packer/distros/debian/13/uefi/debian13-uefi.pkr.hcl"
+        - "packer/distros/debian/13/uefi-lvm/debian13-uefi-lvm.pkr.hcl"
+        - "packer/distros/rhel/10/uefi/rhel10-uefi.pkr.hcl"
+        - "packer/distros/rhel/10/uefi-lvm/rhel10-uefi-lvm.pkr.hcl"
+        - "packer/distros/rocky/10/uefi/rocky10-uefi.pkr.hcl"
+        - "packer/distros/rocky/10/uefi-lvm/rocky10-uefi-lvm.pkr.hcl"
+
+  makefile:
+    name: "XENSERVER_VERSION default in the Makefile"
+    kind: file
+    scmid: default
+    sourceid: xenserverPluginVersion
+    spec:
+      file: "Makefile"
+      matchpattern: 'XENSERVER_VERSION \?= .*'
+      replacepattern: 'XENSERVER_VERSION ?= {{ source "xenserverPluginVersion" }}'
+
+actions:
+  default:
+    kind: github/pullrequest
+    scmid: default
+    title: 'deps(packer): bump the xenserver plugin to {{ source "xenserverPluginVersion" }}'
+    spec:
+      labels:
+        - dependencies

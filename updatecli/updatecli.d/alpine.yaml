@@ -1,0 +1,104 @@
+---
+# Alpine virt ISO, patch releases within the 3.23 branch only.
+#
+# This deliberately does not follow Alpine's newest stable. The templates are laid out as
+# `packer/distros/alpine/<minor>/`, so moving to 3.24 means a new directory and a new .pkr.hcl —
+# a file updatecli cannot create, only edit. Pointing this manifest at `latest-stable` would rewrite
+# the 3.23 template's iso_url to a 3.24 image and leave the directory, the template name and the
+# `template-alpine23-uefi_disk1` output name all claiming 3.23. Adding a minor version stays a human
+# decision; keeping the branch we ship on current is the part worth automating.
+#
+# When 3.24 gets its own directory, copy this file to alpine324.yaml and change the branch in the
+# two URLs and the version pattern in the targets.
+
+name: 'deps(alpine): bump the Alpine 3.23 virt ISO'
+
+scms:
+  default:
+    kind: github
+    spec:
+      user: "{{ .github.user }}"
+      email: "{{ .github.email }}"
+      owner: "{{ .github.owner }}"
+      repository: "{{ .github.repository }}"
+      token: "{{ requiredEnv .github.token }}"
+      username: "{{ .github.username }}"
+      branch: "{{ .github.branch }}"
+
+sources:
+  alpineVersion:
+    name: "Latest alpine-virt release on the v3.23 branch"
+    kind: shell
+    spec:
+      # latest-releases.yaml lists every flavor for the branch — minirootfs, netboot, standard,
+      # extended, virt. Selecting on `flavor: alpine-virt` matters: the first `version:` in the file
+      # belongs to minirootfs, so anything that just greps the first match pins the wrong image at
+      # a version number that happens to look right.
+      #
+      # Parsed with awk rather than yq: ubuntu-latest ships awk and does not ship yq, and this is
+      # not worth an install step.
+      command: |
+        set -eu
+        releases=$(curl -sfL --retry 5 --retry-delay 5 --retry-all-errors --max-time 60 \
+          https://dl-cdn.alpinelinux.org/alpine/v3.23/releases/x86_64/latest-releases.yaml)
+        version=$(printf '%s\n' "$releases" | awk '
+          /^-/ { ver=""; fl="" }
+          /^[[:space:]]+version:/ { ver=$2 }
+          /^[[:space:]]+flavor:/  { if ($2=="alpine-virt") { print ver; exit } }
+        ')
+        if [ -z "$version" ]; then
+          echo "no alpine-virt entry in the v3.23 latest-releases.yaml" >&2
+          exit 1
+        fi
+        printf '%s' "$version"
+
+  alpineChecksum:
+    name: "SHA256 of that alpine-virt ISO"
+    kind: shell
+    dependson:
+      - alpineVersion
+    spec:
+      command: |
+        set -eu
+        releases=$(curl -sfL --retry 5 --retry-delay 5 --retry-all-errors --max-time 60 \
+          https://dl-cdn.alpinelinux.org/alpine/v3.23/releases/x86_64/latest-releases.yaml)
+        sum=$(printf '%s\n' "$releases" | awk '
+          /^-/ { fl=""; sum="" }
+          /^[[:space:]]+flavor:/ { fl=$2 }
+          /^[[:space:]]+sha256:/ { if (fl=="alpine-virt") { print $2; exit } }
+        ')
+        if [ -z "$sum" ]; then
+          echo "no alpine-virt sha256 in the v3.23 latest-releases.yaml" >&2
+          exit 1
+        fi
+        printf '%s' "$sum"
+
+targets:
+  isoUrl:
+    name: "iso_url, alpine 3.23"
+    kind: file
+    scmid: default
+    sourceid: alpineVersion
+    spec:
+      file: "packer/distros/alpine/23/alpine.pkr.hcl"
+      matchpattern: 'iso_url      = ".*alpine-virt-3\.23\.[0-9]+-x86_64\.iso"'
+      replacepattern: 'iso_url      = "https://dl-cdn.alpinelinux.org/alpine/v3.23/releases/x86_64/alpine-virt-{{ source "alpineVersion" }}-x86_64.iso"'
+
+  isoChecksum:
+    name: "iso_checksum, alpine 3.23"
+    kind: file
+    scmid: default
+    sourceid: alpineChecksum
+    spec:
+      file: "packer/distros/alpine/23/alpine.pkr.hcl"
+      matchpattern: 'iso_checksum = ".*"'
+      replacepattern: 'iso_checksum = "{{ source "alpineChecksum" }}"'
+
+actions:
+  default:
+    kind: github/pullrequest
+    scmid: default
+    title: 'deps(alpine): bump the 3.23 virt ISO to {{ source "alpineVersion" }}'
+    spec:
+      labels:
+        - dependencies
