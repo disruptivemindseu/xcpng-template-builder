@@ -1,0 +1,46 @@
+# Catches the silent way updatecli stops working.
+#
+# A file target rewrites lines matching a regex. When the regex matches nothing, updatecli does not
+# error: it rewrites nothing and reports success. So renaming a template, moving it, or letting a
+# formatter change the spacing around `iso_url` is enough to switch off an ISO bump permanently,
+# with a green pipeline the whole time. That is the failure this guards.
+#
+# Separate from updatecli.yaml on purpose. That one runs on a schedule and must not run on pull
+# requests: its targets carry `scmid: default`, so it resolves file paths against the remote default
+# branch rather than the pull request's checkout, and any pull request that adds or moves a target
+# fails a check nobody can turn green. This job has the opposite property. It reads only the
+# checkout, touches no network, and so is safe to require.
+---
+name: updatecli targets
+
+on:
+  pull_request:
+    paths:
+      - 'updatecli/**'
+      - 'packer/**'
+      - 'Makefile'
+      - '.github/workflows/updatecli-targets.yaml'
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  check-targets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      # The script needs nothing else. Keeping the dependency list to one package is deliberate:
+      # a guard that breaks on its own toolchain gets disabled rather than fixed.
+      - name: Install PyYAML
+        run: pip install --quiet pyyaml
+
+      - name: Every updatecli target must still match something
+        run: python3 updatecli/check-targets.py
