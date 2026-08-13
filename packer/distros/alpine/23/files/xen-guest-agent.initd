@@ -21,12 +21,16 @@ depend() {
 	before xe-guest-utilities
 }
 
-start_pre() {
-	# Equivalent of the unit's ConditionVirtualization=xen: stay quiet and do
-	# not fail the boot when the image is not running under Xen.
+start() {
+	# Equivalent of the unit's ConditionVirtualization=xen. Returning non-zero from start_pre()
+	# looks like it should do this, but OpenRC treats it as a failure: it prints
+	# "ERROR: xen-guest-agent failed to start" and exits 1, which is precisely the noise this is
+	# meant to avoid on a non-Xen boot. mark_service_inactive records "not applicable here"
+	# without failing.
 	if [ ! -d /proc/xen ]; then
 		einfo "Not running under Xen, not starting $name"
-		return 1
+		mark_service_inactive
+		return 0
 	fi
 
 	if [ ! -e /proc/xen/xenbus ]; then
@@ -34,4 +38,6 @@ start_pre() {
 		mount -t xenfs none /proc/xen
 		eend $?
 	fi
+
+	default_start
 }

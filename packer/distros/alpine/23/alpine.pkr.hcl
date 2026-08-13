@@ -201,6 +201,12 @@ build {
       "rc-service xe-guest-utilities stop || true",
       "rc-update del xe-guest-utilities boot || true",
       "apk del xe-guest-utilities",
+      # Start it here rather than leaving it to first boot. It costs nothing and it means a
+      # template can never be sealed around an agent that does not run: if the binary is
+      # missing a library or the init script is wrong, the build fails here instead of
+      # producing an image whose breakage only shows up in XO.
+      "rc-service xen-guest-agent start",
+      "pgrep -a xen-guest-agent",
       # The toolchain and the cargo caches are several hundred MB and have no business in a
       # template. Removing them here rather than trusting a later cleanup step.
       "apk del .xga-build",
