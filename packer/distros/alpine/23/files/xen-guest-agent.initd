@@ -1,0 +1,37 @@
+#!/sbin/openrc-run
+
+name="xen-guest-agent"
+description="Xen guest agent"
+
+command="/usr/sbin/xen-guest-agent"
+command_background=true
+pidfile="/run/$RC_SVCNAME.pid"
+
+# Upstream's systemd unit uses Restart=on-failure; supervise-daemon is the
+# OpenRC equivalent.
+supervisor="supervise-daemon"
+respawn_delay=5
+respawn_max=0
+
+depend() {
+	need localmount
+	after bootmisc
+	# Upstream's unit declares Conflicts=xe-linux-distribution.service.
+	# Both agents write the same xenstore keys, so never run them together.
+	before xe-guest-utilities
+}
+
+start_pre() {
+	# Equivalent of the unit's ConditionVirtualization=xen: stay quiet and do
+	# not fail the boot when the image is not running under Xen.
+	if [ ! -d /proc/xen ]; then
+		einfo "Not running under Xen, not starting $name"
+		return 1
+	fi
+
+	if [ ! -e /proc/xen/xenbus ]; then
+		ebegin "Mounting xenfs on /proc/xen"
+		mount -t xenfs none /proc/xen
+		eend $?
+	fi
+}
