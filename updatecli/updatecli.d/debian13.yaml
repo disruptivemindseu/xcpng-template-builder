@@ -57,14 +57,19 @@ sources:
     # If Debian archives a point release in the seconds between them, this manifest writes an
     # iso_url for one version and an iso_checksum for another.
     #
-    # Left as is, deliberately. The pair is checked before anything is built — Packer verifies the
-    # checksum after downloading and aborts — so the visible outcome is a failed build on an
-    # updatecli pull request that a human is already reading, not a template built from an
-    # unverified image. The alternative is `iso_checksum = "file:<SHA512SUMS URL>"`, which cannot
-    # disagree because Packer resolves both from the same directory at build time, but it drops the
-    # hash from the repository. Keeping it here means a mirror that ever serves different bytes for
-    # this filename fails the build, and that tripwire is worth more than closing a window that is
-    # seconds wide a few times a year.
+    # Two things keep that from mattering. Packer verifies the checksum after downloading and
+    # aborts, so a split pair fails the build rather than producing a template from an image nobody
+    # checked. And both targets below match unconditionally — `iso_url      = ".*"` rather than a
+    # version-anchored pattern — so they apply together or not at all. An anchored URL pattern is
+    # the dangerous shape: if it ever stops matching (a template repointed at a DVD image or a local
+    # mirror) while the catch-all checksum pattern still matches, updatecli rewrites and pushes the
+    # checksum alone, exits non-zero, and skips the action, so no pull request opens to show it.
+    #
+    # The alternative is `iso_checksum = "file:<SHA512SUMS URL>"`, which cannot disagree at all
+    # because Packer resolves both from the same directory at build time. It is not used here
+    # because it drops the hash from the repository, and a hash in git is a tripwire: a mirror that
+    # ever serves different bytes for this filename fails the build. That is worth more than closing
+    # a window seconds wide that already fails safe.
     dependson:
       - debian13Version
     spec:
@@ -100,7 +105,7 @@ targets:
     sourceid: debian13Version
     spec:
       file: "packer/distros/debian/13/uefi/debian13-uefi.pkr.hcl"
-      matchpattern: 'iso_url      = ".*debian-13\.[0-9]+\.[0-9]+-amd64-netinst\.iso"'
+      matchpattern: 'iso_url      = ".*"'
       replacepattern: 'iso_url      = "https://cdimage.debian.org/cdimage/archive/{{ source "debian13Version" }}/amd64/iso-cd/debian-{{ source "debian13Version" }}-amd64-netinst.iso"'
 
   uefiIsoChecksum:
@@ -120,7 +125,7 @@ targets:
     sourceid: debian13Version
     spec:
       file: "packer/distros/debian/13/uefi-lvm/debian13-uefi-lvm.pkr.hcl"
-      matchpattern: 'iso_url      = ".*debian-13\.[0-9]+\.[0-9]+-amd64-netinst\.iso"'
+      matchpattern: 'iso_url      = ".*"'
       replacepattern: 'iso_url      = "https://cdimage.debian.org/cdimage/archive/{{ source "debian13Version" }}/amd64/iso-cd/debian-{{ source "debian13Version" }}-amd64-netinst.iso"'
 
   uefiLvmIsoChecksum:

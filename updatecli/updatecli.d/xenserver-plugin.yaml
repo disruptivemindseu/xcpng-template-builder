@@ -53,6 +53,15 @@ targets:
       # Same pattern the Makefile's sed uses, so the two stay interchangeable.
       matchpattern: 'version = ">= [0-9.]*"'
       replacepattern: 'version = ">= {{ source "xenserverPluginVersion" }}"'
+      # This list is enumerated because updatecli's file target takes paths, not a glob, while
+      # `make update-xenserver-version` walks `find packer/distros -name "*.pkr.hcl"`. The two
+      # therefore drift the moment a template is added, and nothing reports the omission — the new
+      # file simply never gets bumped, which is how the Alpine template ended up four minor versions
+      # behind the other twelve.
+      #
+      # A template is already waiting to do this: branch `rhel-airgapped` adds
+      # packer/distros/rhel/10/uefi-airgapped/rhel10-uefi.pkr.hcl. Add its path here when that
+      # merges, and add a line for every template added after it.
       files:
         - "packer/distros/alma/10/uefi/alma10-uefi.pkr.hcl"
         - "packer/distros/alma/10/uefi-lvm/alma10-uefi-lvm.pkr.hcl"

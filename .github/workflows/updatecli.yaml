@@ -38,9 +38,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Two versions, and they are not the same thing. The action tag installs the installer; the
+      # `version` input decides which updatecli it installs, and that input has no default, so
+      # leaving it out means every weekly run picks up whatever updatecli released most recently.
+      # This repository's manifests already depend on one behavioural detail that changed across
+      # releases (`versionfilter` vs the older `versioning`, see xenserver-plugin.yaml), so an
+      # unpinned tool is a manifest that can change behaviour with nothing in the repository having
+      # changed. Both are pinned, and dependabot.yml keeps the action tag moving.
       - name: Install Updatecli
-        # Pinned. Dependabot's github-actions ecosystem keeps this current.
         uses: updatecli/updatecli-action@v3.5.0
+        with:
+          version: 0.119.0
 
       # The owner goes through the environment rather than straight into the run block. It is a
       # repository owner name and not attacker-controlled, but interpolating ${{ }} into a shell

@@ -82,7 +82,7 @@ targets:
     sourceid: debian12Version
     spec:
       file: "packer/distros/debian/12/uefi/debian12-uefi.pkr.hcl"
-      matchpattern: 'iso_url      = ".*debian-12\.[0-9]+\.[0-9]+-amd64-netinst\.iso"'
+      matchpattern: 'iso_url      = ".*"'
       replacepattern: 'iso_url      = "https://cdimage.debian.org/cdimage/archive/{{ source "debian12Version" }}/amd64/iso-cd/debian-{{ source "debian12Version" }}-amd64-netinst.iso"'
 
   uefiIsoChecksum:
@@ -102,7 +102,7 @@ targets:
     sourceid: debian12Version
     spec:
       file: "packer/distros/debian/12/uefi-lvm/debian12-uefi-lvm.pkr.hcl"
-      matchpattern: 'iso_url      = ".*debian-12\.[0-9]+\.[0-9]+-amd64-netinst\.iso"'
+      matchpattern: 'iso_url      = ".*"'
       replacepattern: 'iso_url      = "https://cdimage.debian.org/cdimage/archive/{{ source "debian12Version" }}/amd64/iso-cd/debian-{{ source "debian12Version" }}-amd64-netinst.iso"'
 
   uefiLvmIsoChecksum:
