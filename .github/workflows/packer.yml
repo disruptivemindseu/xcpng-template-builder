@@ -20,7 +20,7 @@ jobs:
     outputs:
       matrix: ${{ steps.get_dirs.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Get packer directories
@@ -60,7 +60,7 @@ jobs:
         dir: ${{ fromJson(needs.list-templates.outputs.matrix) }}
       max-parallel: 2
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Run Packer
         run: |
           source $HOME/.env

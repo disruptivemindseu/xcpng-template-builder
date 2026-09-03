@@ -36,7 +36,7 @@ jobs:
     if: github.event.repository.fork == false
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Two versions, and they are not the same thing. The action tag installs the installer; the
       # `version` input decides which updatecli it installs, and that input has no default, so
