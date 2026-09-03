@@ -1,0 +1,11 @@
+---
+# `owner` is intentionally absent: the workflow injects it with
+# --values-inline '{"github":{"owner":"${{ github.repository_owner }}"}}'.
+# Hardcoding it here means a fork keeps opening pull requests against disruptivemindseu.
+github:
+  user: "github-actions[bot]"
+  email: "41898282+github-actions[bot]@users.noreply.github.com"
+  username: "github-actions"
+  token: "UPDATECLI_GITHUB_TOKEN"
+  branch: "main"
+  repository: "xcpng-template-builder"

@@ -1,0 +1,18 @@
+---
+# Dependabot owns the `uses:` lines; updatecli owns everything dependabot cannot see.
+#
+# The split matters, because otherwise the two would fight over the same lines. Dependabot reads
+# workflow files and bumps action tags. It cannot read a version inside a `run:` step, inside Packer
+# HCL, or inside a Makefile variable, and those are exactly what updatecli/updatecli.d covers.
+#
+# Without this file nothing bumps the action tags at all: updatecli.yaml pins
+# updatecli/updatecli-action, and packer.yml pins actions/checkout, and neither is in any manifest.
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"

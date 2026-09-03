@@ -1,0 +1,145 @@
+---
+# Debian 13 netinst ISO.
+#
+# The pin has to be an `archive/` URL rather than `debian-cd/current/`. cdimage serves exactly one
+# point release under `release/`, moves the previous one to `archive/`, and `current/` follows the
+# newest. So a template that names a fixed filename under `current/` stops resolving the day the
+# next point release lands, which is what happened here: `current/` moved to 13.6.0 and
+# `debian-13.5.0-amd64-netinst.iso` started returning 404.
+#
+# `archive/<version>/` never moves once a version is in it, so the URL this manifest writes stays
+# valid for as long as the pin does. The cost is that we track the newest *archived* point release
+# rather than the newest overall — one behind. For a netinst that is not a real cost: the installer
+# pulls current packages from the mirror during the install anyway.
+
+name: 'deps(debian13): bump the Debian 13 netinst ISO'
+
+scms:
+  default:
+    kind: github
+    spec:
+      user: "{{ .github.user }}"
+      email: "{{ .github.email }}"
+      owner: "{{ .github.owner }}"
+      repository: "{{ .github.repository }}"
+      token: "{{ requiredEnv .github.token }}"
+      username: "{{ .github.username }}"
+      branch: "{{ .github.branch }}"
+
+sources:
+  debian13Version:
+    name: "Newest archived Debian 13 point release"
+    kind: shell
+    spec:
+      # curl piped straight into grep hides a failed fetch: the pipeline exits with the status of
+      # the last command, so an unreachable cdimage.debian.org yields an empty string that updatecli
+      # would happily write into iso_url. Fetch into a variable first, then check it.
+      command: |
+        set -eu
+        index=$(curl -sfL --retry 5 --retry-delay 5 --retry-all-errors --max-time 60 \
+          https://cdimage.debian.org/cdimage/archive/)
+        version=$(printf '%s\n' "$index" |
+          grep -oE '13\.[0-9]+\.[0-9]+/' |
+          sort -t. -k1,1n -k2,2n -k3,3n -u |
+          tail -1 |
+          tr -d '/')
+        if [ -z "$version" ]; then
+          echo "no Debian 13 point release found in the archive index" >&2
+          exit 1
+        fi
+        printf '%s' "$version"
+
+  debian13Checksum:
+    name: "SHA512 of that release's netinst ISO"
+    kind: shell
+    # This takes the version from debian13Version rather than working it out again, so the hash and
+    # the URL always describe the same image. Two notes on how that works, because both are easy to
+    # get wrong:
+    #
+    # The `source` template reference is what creates the ordering, not `dependson`. updatecli
+    # builds the graph from the reference itself — a producer declared after its consumer, and
+    # sorting after it alphabetically, still runs first. `dependson` here would be redundant.
+    #
+    # A failed parent does not arrive as an empty string, which is the failure this would otherwise
+    # invite. It fails this source outright:
+    #   executing "cfg" at <source "debian13Version">: error calling source: parent source failed
+    #
+    # Not switching to `iso_checksum = "file:<SHA512SUMS URL>"`, which would also keep the two in
+    # step by making Packer resolve both from the same directory at build time. It drops the hash
+    # from the repository, and a hash in git is a tripwire: a mirror that ever serves different
+    # bytes for this filename fails the build. Keeping that is worth the extra fetch.
+    spec:
+      # The trailing `$` and the two-space separator matter. SHA512SUMS also lists
+      # debian-edu-<ver>-amd64-netinst.iso and debian-mac-<ver>-amd64-netinst.iso, and a looser
+      # pattern picks one of those — a checksum that is real, verifies nothing we downloaded, and
+      # fails the build with a mismatch that looks like a corrupted mirror.
+      command: |
+        set -eu
+        version='{{ source "debian13Version" }}'
+        sums=$(curl -sfL --retry 5 --retry-delay 5 --retry-all-errors --max-time 60 \
+          "https://cdimage.debian.org/cdimage/archive/${version}/amd64/iso-cd/SHA512SUMS")
+        sum=$(printf '%s\n' "$sums" |
+          grep -E "  debian-${version}-amd64-netinst\.iso\$" |
+          cut -d' ' -f1)
+        if [ -z "$sum" ]; then
+          echo "no netinst checksum for Debian ${version}" >&2
+          exit 1
+        fi
+        printf '%s' "$sum"
+
+# Both patterns below match unconditionally — `iso_url      = ".*"` rather than something anchored to
+# the version. That is deliberate. These are independent targets that commit and push separately, so
+# an anchored URL pattern is the dangerous shape: if it ever stopped matching, say because a template
+# was repointed at a DVD image or a local mirror, the catch-all checksum pattern would still match,
+# updatecli would rewrite and push the checksum on its own, exit non-zero, and skip the action — so
+# no pull request would open to show what happened. Matching both unconditionally means they apply
+# together or not at all.
+targets:
+  uefiIsoUrl:
+    name: "iso_url, debian13-uefi"
+    kind: file
+    scmid: default
+    sourceid: debian13Version
+    spec:
+      file: "packer/distros/debian/13/uefi/debian13-uefi.pkr.hcl"
+      matchpattern: 'iso_url      = ".*"'
+      replacepattern: 'iso_url      = "https://cdimage.debian.org/cdimage/archive/{{ source "debian13Version" }}/amd64/iso-cd/debian-{{ source "debian13Version" }}-amd64-netinst.iso"'
+
+  uefiIsoChecksum:
+    name: "iso_checksum, debian13-uefi"
+    kind: file
+    scmid: default
+    sourceid: debian13Checksum
+    spec:
+      file: "packer/distros/debian/13/uefi/debian13-uefi.pkr.hcl"
+      matchpattern: 'iso_checksum = ".*"'
+      replacepattern: 'iso_checksum = "{{ source "debian13Checksum" }}"'
+
+  uefiLvmIsoUrl:
+    name: "iso_url, debian13-uefi-lvm"
+    kind: file
+    scmid: default
+    sourceid: debian13Version
+    spec:
+      file: "packer/distros/debian/13/uefi-lvm/debian13-uefi-lvm.pkr.hcl"
+      matchpattern: 'iso_url      = ".*"'
+      replacepattern: 'iso_url      = "https://cdimage.debian.org/cdimage/archive/{{ source "debian13Version" }}/amd64/iso-cd/debian-{{ source "debian13Version" }}-amd64-netinst.iso"'
+
+  uefiLvmIsoChecksum:
+    name: "iso_checksum, debian13-uefi-lvm"
+    kind: file
+    scmid: default
+    sourceid: debian13Checksum
+    spec:
+      file: "packer/distros/debian/13/uefi-lvm/debian13-uefi-lvm.pkr.hcl"
+      matchpattern: 'iso_checksum = ".*"'
+      replacepattern: 'iso_checksum = "{{ source "debian13Checksum" }}"'
+
+actions:
+  default:
+    kind: github/pullrequest
+    scmid: default
+    title: 'deps(debian13): bump the netinst ISO to {{ source "debian13Version" }}'
+    spec:
+      labels:
+        - dependencies

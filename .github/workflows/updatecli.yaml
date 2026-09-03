@@ -1,0 +1,78 @@
+# Keeps the pinned ISO versions and the Packer plugin version current.
+#
+# Nothing here touches .github/workflows/, so the built-in GITHUB_TOKEN is enough and no personal
+# access token is needed. Two consequences worth knowing:
+#
+#   - "Allow GitHub Actions to create and approve pull requests" has to be on, under
+#     Settings > Actions > General. Without it the run fails at pull request creation with
+#     "GitHub Actions is not permitted to create or approve pull requests".
+#   - A pull request opened with GITHUB_TOKEN does not trigger other workflows, so the updatecli
+#     pull request itself arrives without a Packer build against it. packer.yml builds on push to
+#     main, so the build still runs once the pull request is merged. If a build *on* the pull
+#     request is wanted later, swap this for a PAT in a secret and packer.yml gains a
+#     pull_request trigger.
+---
+name: updatecli
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly. Point releases and plugin releases do not arrive daily, and each run that finds
+    # something opens a pull request that a human has to look at.
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  updatecli:
+    # ubuntu-latest on purpose, not the self-hosted packer runners: this only rewrites text and
+    # talks to cdimage.debian.org, dl-cdn.alpinelinux.org and the GitHub API. Putting it on the
+    # build runners would queue it behind template builds for no benefit.
+    runs-on: ubuntu-latest
+    # Never run from a fork: it would try to open pull requests on the upstream repository.
+    # Testing fork status rather than the owner name keeps this working if the repository moves.
+    if: github.event.repository.fork == false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Two versions, and they are not the same thing. The action tag installs the installer; the
+      # `version` input decides which updatecli it installs, and that input has no default, so
+      # leaving it out means every weekly run picks up whatever updatecli released most recently.
+      # This repository's manifests already depend on one behavioural detail that changed across
+      # releases (`versionfilter` vs the older `versioning`, see xenserver-plugin.yaml), so an
+      # unpinned tool is a manifest that can change behaviour with nothing in the repository having
+      # changed. Both are pinned, and dependabot.yml keeps the action tag moving.
+      - name: Install Updatecli
+        uses: updatecli/updatecli-action@v3.5.0
+        with:
+          version: 0.119.0
+
+      # The owner goes through the environment rather than straight into the run block. It is a
+      # repository owner name and not attacker-controlled, but interpolating ${{ }} into a shell
+      # command is the habit worth not having.
+      #
+      # diff first, so a run that cannot reach cdimage fails visibly here rather than opening an
+      # empty or half-written pull request.
+      - name: Diff
+        env:
+          UPDATECLI_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_OWNER: ${{ github.repository_owner }}
+        run: |
+          updatecli pipeline diff \
+            --config ./updatecli/updatecli.d \
+            --values ./updatecli/values.github-action.yaml \
+            --values-inline "{\"github\":{\"owner\":\"${REPO_OWNER}\"}}"
+
+      - name: Apply
+        if: github.ref == 'refs/heads/main'
+        env:
+          UPDATECLI_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_OWNER: ${{ github.repository_owner }}
+        run: |
+          updatecli pipeline apply \
+            --config ./updatecli/updatecli.d \
+            --values ./updatecli/values.github-action.yaml \
+            --values-inline "{\"github\":{\"owner\":\"${REPO_OWNER}\"}}"
