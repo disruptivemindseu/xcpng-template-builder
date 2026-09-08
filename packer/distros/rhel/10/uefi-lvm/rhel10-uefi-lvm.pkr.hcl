@@ -78,7 +78,7 @@ locals {
 }
 
 source "xenserver-iso" "template" {
-  iso_name     = "rhel-10.1-x86_64-dvd.iso"
+  iso_name     = "rhel-10.2-x86_64-dvd.iso"
 
   sr_iso_name    = var.sr_iso_name
   sr_name        = var.sr_name
