@@ -145,7 +145,7 @@ source "xenserver-iso" "template" {
   keep_vm              = "on_success"
   skip_set_template    = false
   format               = "none"
-  export_network_names = ["Pool-wide network associated with eth0"]
+  export_network_names = ["Pool-wide network 2"]
 }
 
 build {

@@ -61,7 +61,7 @@ variable "vm_description" {
 variable "disk_name" {
   type        = string
   description = "The name of the disk to create for the VM. This will be pulled from the env var 'PKR_VAR_disk_name'"
-  default     = "template-debian13-uefi_disk1"
+  default     = "template-rhel8-uefi-lvm_disk1"
 }
 
 variable "vm_tags" {
@@ -73,18 +73,17 @@ variable "vm_tags" {
 locals {
   timestamp      = regex_replace(timestamp(), "[- TZ:]", "")
   buildtime      = formatdate("YYYY.MM.DD", timestamp())
-  vm_name        = coalesce(var.vm_name, "template-debian13-uefi_${local.timestamp}")
-  vm_description = coalesce(var.vm_description, "[Template] Debian 13 UEFI built on ${local.buildtime} by Packer")
+  vm_name        = coalesce(var.vm_name, "template-rhel8-uefi-lvm_${local.timestamp}")
+  vm_description = coalesce(var.vm_description, "[Template] RHEL 8 UEFI LVM built on ${local.buildtime} by Packer")
 }
 
 source "xenserver-iso" "template" {
-  iso_checksum = "b2be60c555e328b4fa5ebb2d0e5c7ee6bc3eb4250c4dcfd3f78b8d9aec596efdf9f14f10a898c280eb252d50bbac91ea0a2bba29736df0d4985d50d4c8d77519"
-  iso_url      = "https://cdimage.debian.org/cdimage/archive/13.5.0/amd64/iso-cd/debian-13.5.0-amd64-netinst.iso"
+  iso_name     = "rhel-8.10-x86_64-dvd.iso"
 
   sr_iso_name    = var.sr_iso_name
   sr_name        = var.sr_name
   tools_iso_name = ""
-
+  
   remote_host     = var.remote_host
   remote_password = var.remote_password
   remote_username = var.remote_username
@@ -96,22 +95,15 @@ source "xenserver-iso" "template" {
 
   boot_command = [
     "c",
-    "linux /install.amd/vmlinuz ",
-    "vga=788 ",
-    "theme=dark ",
-    "auto=true ",
-    "priority=critical ",
-    "url=http://{{.HTTPIP}}:{{.HTTPPort}}/preseed.cfg ",
-    "hostname=template-debian13-uefi ",
-    "--- ",
-    "quiet ",
+    "linuxefi /images/pxeboot/vmlinuz inst.ks=http://{{.HTTPIP}}:{{.HTTPPort}}/ks.cfg ",
     "<enter>",
-    "initrd /install.amd/initrd.gz ",
+    "initrdefi /images/pxeboot/initrd.img ",
     "<enter>",
-    "boot<enter>"
+    "boot",
+    "<enter>"
   ]
 
-  clone_template  = "Debian Bookworm 12"
+  clone_template  = "Red Hat Enterprise Linux 8"
   vm_name         = local.vm_name
   vm_description  = local.vm_description
   vcpus_max       = 2
@@ -124,7 +116,7 @@ source "xenserver-iso" "template" {
   firmware        = "uefi"
 
   ssh_username           = "template"
-  ssh_password           = "debian13-uefi"
+  ssh_password           = "rhel8-uefi-lvm"
   ssh_wait_timeout       = "60000s"
   ssh_handshake_attempts = 10000
 

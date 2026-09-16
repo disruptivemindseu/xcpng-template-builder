@@ -103,7 +103,7 @@ source "xenserver-iso" "template" {
     "<enter>"
   ]
 
-  clone_template  = "Red Hat Enterprise Linux 10"
+  clone_template  = "Red Hat Enterprise Linux 10 (preview)"
   vm_name         = local.vm_name
   vm_description  = local.vm_description
   vcpus_max       = 2
@@ -124,7 +124,7 @@ source "xenserver-iso" "template" {
   keep_vm              = "on_success"
   skip_set_template    = false
   format               = "none"
-  export_network_names = ["Pool-wide network associated with eth0"]
+  export_network_names = ["Pool-wide network 2"]
 }
 
 build {

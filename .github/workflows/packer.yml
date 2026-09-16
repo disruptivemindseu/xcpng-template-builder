@@ -16,7 +16,7 @@ on:
 
 jobs:
   list-templates:
-    runs-on: [ self-hosted, Linux, X64, packer ]
+    runs-on: [ self-hosted, Linux, X64, bender ]
     outputs:
       matrix: ${{ steps.get_dirs.outputs.matrix }}
     steps:
@@ -54,7 +54,7 @@ jobs:
   packer:
     needs: list-templates
     if: needs.list-templates.outputs.matrix != '[]'
-    runs-on: [ self-hosted, Linux, X64, packer ]
+    runs-on: [ self-hosted, Linux, X64, bender ]
     strategy:
       matrix:
         dir: ${{ fromJson(needs.list-templates.outputs.matrix) }}
@@ -64,6 +64,7 @@ jobs:
       - name: Run Packer
         run: |
           source $HOME/.env
+          eval "$(/home/github/.local/bin/mise activate bash)"
           cd ${{ matrix.dir }}
           packer init .
           packer validate .
