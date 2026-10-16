@@ -79,7 +79,7 @@ locals {
 
 source "xenserver-iso" "template" {
   iso_checksum = "418540edffccff0254dc6c517ce45d1a9b5913107253cea39d6cdec0ff9c7ae47dcba985437991535b476523b12030aba0cc9c21db9e23b1cf2c998aaeea60e5"
-  iso_url      = "https://cdimage.debian.org/cdimage/archive/12.13.0/amd64/iso-cd/debian-12.13.0-amd64-netinst.iso"
+  iso_url      = "https://cdimage.debian.org/cdimage/archive/12.15.0/amd64/iso-cd/debian-12.15.0-amd64-netinst.iso"
 
   sr_iso_name    = var.sr_iso_name
   sr_name        = var.sr_name
