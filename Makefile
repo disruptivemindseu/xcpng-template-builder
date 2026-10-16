@@ -1,7 +1,7 @@
 .PHONY: help update-xenserver-version clean-xenserver-plugin download-xenserver-plugin sync-xenserver-plugin
 
 # Variables
-XENSERVER_VERSION ?= 0.8.1
+XENSERVER_VERSION ?= 0.11.4
 XENSERVER_PLUGIN_SOURCE := github.com/vatesfr/xenserver
 XENSERVER_GITHUB_REPO := vatesfr/xenserver
 
