@@ -79,7 +79,7 @@ locals {
 
 source "xenserver-iso" "template" {
   iso_checksum = "60eb3acbe6bfb2a754d0fbef0255b516cb51dedec47c9068b991bb5b9831d671"
-  iso_url      = "https://dl-cdn.alpinelinux.org/alpine/v3.23/releases/x86_64/alpine-virt-3.23.6-x86_64.iso"
+  iso_url      = "https://dl-cdn.alpinelinux.org/alpine/v3.23/releases/x86_64/alpine-virt-3.23.7-x86_64.iso"
 
   sr_iso_name    = var.sr_iso_name
   sr_name        = var.sr_name
