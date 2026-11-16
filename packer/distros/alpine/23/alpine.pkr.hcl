@@ -1,7 +1,7 @@
 packer {
   required_plugins {
     xenserver = {
-      version = ">= 0.8.1"
+      version = ">= 0.12.0"
       source  = "github.com/vatesfr/xenserver"
     }
   }
